@@ -112,7 +112,8 @@ class AudioRecorderManager extends ReactContextBaseJavaModule {
 
     recorder = new MediaRecorder();
     try {
-      recorder.setAudioSource(MediaRecorder.AudioSource.MIC);
+      // recorder.setAudioSource(MediaRecorder.AudioSource.MIC);
+      recorder.setAudioSource(recordingSettings.getInt("AudioSource"));
       int outputFormat = getOutputFormatFromString(recordingSettings.getString("OutputFormat"));
       recorder.setOutputFormat(outputFormat);
       int audioEncoder = getAudioEncoderFromString(recordingSettings.getString("AudioEncoding"));
@@ -287,11 +288,12 @@ class AudioRecorderManager extends ReactContextBaseJavaModule {
           body.putDouble("currentTime", stopWatch.getTimeSeconds());
 
           int amplitude = recorder.getMaxAmplitude();
-          if (amplitude == 0) {
+          body.putInt("currentMetering", amplitude)
+          /*if (amplitude == 0) {
             body.putInt("currentMetering", -160);
           } else {
             body.putInt("currentMetering", (int) (20 * Math.log(((double) amplitude) / 32767d)));
-          }
+          }*/
 
           sendEvent("recordingProgress", body);
         }
