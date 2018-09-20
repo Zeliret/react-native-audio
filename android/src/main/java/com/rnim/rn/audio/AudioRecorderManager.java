@@ -322,8 +322,8 @@ class AudioRecorderManager extends ReactContextBaseJavaModule {
 
   
   private void setProgressUpdateInterval(int progressUpdateInterval) {
-    if(progressUpdateInterval < 100) {
-      this.progressUpdateInterval = 100;
+    if(progressUpdateInterval < 1) {
+      this.progressUpdateInterval = 1;
     } else {
       this.progressUpdateInterval = progressUpdateInterval;
     }
