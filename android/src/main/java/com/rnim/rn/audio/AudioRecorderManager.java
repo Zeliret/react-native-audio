@@ -15,6 +15,7 @@ import com.facebook.react.bridge.ReactApplicationContext;
 import com.facebook.react.bridge.ReactContextBaseJavaModule;
 import com.facebook.react.bridge.ReactMethod;
 import com.facebook.react.bridge.ReadableMap;
+import com.facebook.react.bridge.WritableArray;
 import com.facebook.react.bridge.WritableMap;
 import com.facebook.react.modules.core.DeviceEventManagerModule;
 
@@ -23,8 +24,6 @@ import java.lang.reflect.Method;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.Map;
-import java.util.Timer;
-import java.util.TimerTask;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 
@@ -51,7 +50,6 @@ public class AudioRecorderManager
     private boolean isRecording = false;
     private boolean isPaused = false;
     private ExecutorService executor;
-    private Timer timer;
     private StopWatch stopWatch;
 
     private boolean isPauseResumeCapable = false;
@@ -329,7 +327,12 @@ public class AudioRecorderManager
                             try {
                                 WritableMap body = Arguments.createMap();
                                 body.putDouble("currentTime", currentTime - startUpdateEmitTime);
-                                body.putArray("currentMetering", Arguments.fromArray(amplitudes.toArray(new Integer[0])));
+
+                                WritableArray array = Arguments.createArray();
+                                for (int i = 0; i < amplitudes.size(); i++) {
+                                    array.pushInt(amplitudes.get(i));
+                                }
+                                body.putArray("currentMetering", array);
 
                                 sendEvent("recordingProgress", body);
                             } catch (Exception ignored) {}
