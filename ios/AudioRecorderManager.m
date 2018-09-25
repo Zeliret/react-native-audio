@@ -33,49 +33,67 @@ NSString *const AudioRecorderEventFinished = @"recordingFinished";
   BOOL _meteringEnabled;
   BOOL _measurementMode;
   BOOL _includeBase64;
+  //!!!!
+  NSMutableArray *_averagePowerArray;
+  NSMutableArray *_peakPowerArray;
+  NSTimer *_timer;
 }
 
 @synthesize bridge = _bridge;
 
 RCT_EXPORT_MODULE();
 
-- (void)sendProgressUpdate {
-  if (_audioRecorder && _audioRecorder.isRecording) {
+- (void)sendProgressUpdate:(NSTimer *)timer {
+  if (_audioRecorder && _audioRecorder.isRecording)
+  {
     _currentTime = _audioRecorder.currentTime;
   } else {
     return;
   }
-
-  if (_prevProgressUpdateTime == nil ||
-   (([_prevProgressUpdateTime timeIntervalSinceNow] * -1000.0) >= _progressUpdateInterval)) {
-      NSMutableDictionary *body = [[NSMutableDictionary alloc] init];
-      [body setObject:[NSNumber numberWithFloat:_currentTime] forKey:@"currentTime"];
-      if (_meteringEnabled) {
-          [_audioRecorder updateMeters];
-          float _currentMetering = [_audioRecorder averagePowerForChannel: 0];
-          [body setObject:[NSNumber numberWithFloat:_currentMetering] forKey:@"currentMetering"];
-   
-          float _currentPeakMetering = [_audioRecorder peakPowerForChannel:0];
-          [body setObject:[NSNumber numberWithFloat:_currentPeakMetering] forKey:@"currentPeakMetering"];
-      }
-      [self.bridge.eventDispatcher sendAppEventWithName:AudioRecorderEventProgress body:body];
-
+ 
+    //!!!!
+    if (_meteringEnabled) {
+        [_audioRecorder updateMeters];
+        float _currentMetering = [_audioRecorder averagePowerForChannel: 0];
+        [_averagePowerArray addObject: [NSNumber numberWithFloat:_currentMetering]];
+ 
+        float _currentPeakMetering = [_audioRecorder peakPowerForChannel:0];
+        [_peakPowerArray addObject: [NSNumber numberWithFloat:_currentPeakMetering]];
+        NSLog(@"before sending _currentMetering - %f, _currentPeakMetering- %f", _currentMetering, _currentPeakMetering);
+    }
+ 
+    if (_prevProgressUpdateTime == nil ||
+        (([_prevProgressUpdateTime timeIntervalSinceNow] * -1000.0) >= _progressUpdateInterval)) {
+        NSMutableDictionary *body = [[NSMutableDictionary alloc] init];
+        [body setObject:[NSNumber numberWithFloat:_currentTime] forKey:@"currentTime"];
+        if (_meteringEnabled) {
+            [_audioRecorder updateMeters];
+            [body setObject:_averagePowerArray forKey:@"currentMetering"];
+ 
+            [body setObject:_peakPowerArray forKey:@"currentPeakMetering"];
+            //!!!!
+ 
+            _averagePowerArray = [NSMutableArray array];
+            _peakPowerArray = [NSMutableArray array];
+        }
+        [self.bridge.eventDispatcher sendAppEventWithName:AudioRecorderEventProgress body:body];
     _prevProgressUpdateTime = [NSDate date];
   }
 }
 
 - (void)stopProgressTimer {
-  [_progressUpdateTimer invalidate];
+    [_timer invalidate];
 }
 
 - (void)startProgressTimer {
   _progressUpdateInterval = 250;
-  //_prevProgressUpdateTime = nil;
 
   [self stopProgressTimer];
 
-  _progressUpdateTimer = [CADisplayLink displayLinkWithTarget:self selector:@selector(sendProgressUpdate)];
-  [_progressUpdateTimer addToRunLoop:[NSRunLoop mainRunLoop] forMode:NSRunLoopCommonModes];
+ 
+    dispatch_async(dispatch_get_main_queue(), ^{
+        _timer = [NSTimer scheduledTimerWithTimeInterval:0.001 target:self selector:@selector(sendProgressUpdate:) userInfo:nil repeats:YES];
+    });
 }
 
 - (void)audioRecorderDidFinishRecording:(AVAudioRecorder *)recorder successfully:(BOOL)flag {
@@ -215,6 +233,10 @@ RCT_EXPORT_METHOD(prepareRecordingAtPath:(NSString *)path sampleRate:(float)samp
   _audioRecorder.meteringEnabled = _meteringEnabled;
   _audioRecorder.delegate = self;
 
+    //!!!!
+    _averagePowerArray = [NSMutableArray array];
+    _peakPowerArray = [NSMutableArray array];
+    
   if (error) {
       NSLog(@"error: %@", [error localizedDescription]);
       // TODO: dispatch error over the bridge
