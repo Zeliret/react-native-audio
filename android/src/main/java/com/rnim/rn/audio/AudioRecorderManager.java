@@ -280,22 +280,6 @@ public class AudioRecorderManager
     }
 
     private void startTimer() {
-        timer = new Timer();
-        timer.scheduleAtFixedRate(new TimerTask() {
-            @Override
-            public void run() {
-                if (!isPaused) {
-                    WritableMap body = Arguments.createMap();
-                    body.putDouble("currentTime", stopWatch.getTimeSeconds());
-
-                    int amplitude = recorder.getMaxAmplitude();
-                    body.putInt("currentMetering", amplitude);
-
-                    sendEvent("recordingProgress", body);
-                }
-            }
-        }, 0, progressUpdateInterval);
-
         int initialCapacity = progressUpdateInterval + 100;
         amplitudes = new ArrayList<>(initialCapacity);
         Log.d(TAG, String.format("[AMP] Initial array capacity: %d", initialCapacity));
@@ -347,7 +331,7 @@ public class AudioRecorderManager
                                 body.putDouble("currentTime", currentTime - startUpdateEmitTime);
                                 body.putArray("currentMetering", Arguments.fromArray(amplitudes.toArray(new Integer[0])));
 
-                                sendEvent("recordingProgressArrays", body);
+                                sendEvent("recordingProgress", body);
                             } catch (Exception ignored) {}
 
                             Log.d(TAG, String.format("[AMP] Event sent at %d ms with %d values", currentTime, amplitudes.size()));
@@ -362,12 +346,6 @@ public class AudioRecorderManager
     }
 
     private void stopTimer() {
-        if (timer != null) {
-            timer.cancel();
-            timer.purge();
-            timer = null;
-        }
-
         if (null != executor) {
             executor.shutdown();
             executor = null;
