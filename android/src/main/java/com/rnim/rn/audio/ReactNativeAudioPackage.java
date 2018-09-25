@@ -10,7 +10,8 @@ import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
 
-public class ReactNativeAudioPackage implements ReactPackage {
+public class ReactNativeAudioPackage
+        implements ReactPackage {
 
 
     /**
@@ -23,6 +24,11 @@ public class ReactNativeAudioPackage implements ReactPackage {
         modules.add(new AudioRecorderManager(reactContext));
 
         return modules;
+    }
+
+    @Override
+    public List<Class<? extends JavaScriptModule>> createJSModules() {
+        return Collections.emptyList();
     }
 
     /**
